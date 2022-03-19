@@ -5,6 +5,8 @@ echo "*:*:*:${ICINGAWEB_DB_USER}:${ICINGAWEB_DB_PASS}" >>~/.pgpass
 chmod 0600 ~/.pgpass
 
 PG_ARGS="--host=${POSTGRES_HOST} --port=${POSTGRES_PORT}"
+PG_IC2_ARGS="${PG_ARGS} -U ${ICINGA_DB_USER} -d ${ICINGA_DB}"
+PG_WEB_ARGS="${PG_ARGS} -U ${ICINGAWEB_DB_USER} -d ${ICINGAWEB_DB}"
 
 # Database checks
 pg_isready ${PG_ARGS} 2>&1 >/dev/null
@@ -19,10 +21,10 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-psql ${PG_ARGS} -U ${ICINGA_DB_USER} -d ${ICINGA_DB} -qt --command='\dt' | cut -d \| -f 2 | grep -qw icinga_hosts 2>&1 >/dev/null
+psql ${PG_IC2_ARGS} -qt --command='\dt' | cut -d \| -f 2 | grep -qw icinga_hosts 2>&1 >/dev/null
 if [ $? -ne 0 ]; then
   echo "Initializing schema in ${ICINGA_DB}..."
-  psql ${PG_ARGS} -U ${ICINGA_DB_USER} -d ${ICINGA_DB} < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql >/dev/null
+  psql ${PG_IC2_ARGS} < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql >/dev/null
 fi
 
 psql ${PG_ARGS} -U ${ICINGAWEB_DB_USER} -lqt | cut -d \| -f 1 | grep -qw ${ICINGAWEB_DB}
@@ -31,11 +33,15 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-psql ${PG_ARGS} -U ${ICINGAWEB_DB_USER} -d ${ICINGAWEB_DB} -qt --command='\dt' | cut -d \| -f 2 | grep -qw icingaweb_user 2>&1 >/dev/null
+psql ${PG_WEB_ARGS} -qt --command='\dt' | cut -d \| -f 2 | grep -qw icingaweb_user 2>&1 >/dev/null
 if [ $? -ne 0 ]; then
   echo "Initializing schema in ${ICINGAWEB_DB}..."
-  psql ${PG_ARGS} -U ${ICINGAWEB_DB_USER} -d ${ICINGAWEB_DB} < /usr/share/webapps/icingaweb2/etc/schema/pgsql.schema.sql >/dev/null
-  psql ${PG_ARGS} -U ${ICINGAWEB_DB_USER} -d ${ICINGAWEB_DB} -c "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '\$apr1\$XGXddV//\$9RQ1aPossDMFAuBvRcqqT/');"
+  psql ${PG_WEB_ARGS} < /usr/share/webapps/icingaweb2/etc/schema/pgsql.schema.sql >/dev/null
+
+  PASS_HASH=`/usr/bin/php8 -r "echo password_hash(\"${ADMIN_PASS}\", PASSWORD_DEFAULT);"`
+  psql ${PG_WEB_ARGS} -c "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('${ADMIN_USER}', 1, '${PASS_HASH}');"
+  psql ${PG_WEB_ARGS} -c "INSERT INTO icingaweb_group (name) VALUES ('Administrators');"
+  psql ${PG_WEB_ARGS} -c "INSERT INTO icingaweb_group_membership (group_id, username, ctime) SELECT id, 'admin', ctime FROM icingaweb_group WHERE name='Administrators';"
 fi
 
 # Icinga2 setup

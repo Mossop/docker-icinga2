@@ -23,3 +23,5 @@ run.
 * `ICINGAWEB_DB`: Defaults to `icingaweb`
 * `ICINGAWEB_DB_USER`: Defaults to `icinga`
 * `ICINGAWEB_DB_PASS`: Defaults to `icinga`
+* `ADMIN_USER`: Defaults to `admin`
+* `ADMIN_PASS`: Defaults to `admin`

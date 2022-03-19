@@ -20,11 +20,16 @@ COPY etc /etc/
 
 ENV POSTGRES_HOST="postgres"
 ENV POSTGRES_PORT="5432"
+
 ENV ICINGA_DB="icinga"
 ENV ICINGA_DB_USER="icinga"
 ENV ICINGA_DB_PASS="icinga"
+
 ENV ICINGAWEB_DB="icingaweb"
 ENV ICINGAWEB_DB_USER="icinga"
 ENV ICINGAWEB_DB_PASS="icinga"
+
+ENV ADMIN_USER="admin"
+ENV ADMIN_PASS="admin"
 
 ENTRYPOINT ["/init"]
