@@ -1,0 +1,110 @@
+#! /bin/sh
+
+echo "*:*:*:${ICINGA_DB_USER}:${ICINGA_DB_PASS}" >~/.pgpass
+echo "*:*:*:${ICINGAWEB_DB_USER}:${ICINGAWEB_DB_PASS}" >>~/.pgpass
+chmod 0600 ~/.pgpass
+
+PG_ARGS="--host=${POSTGRES_HOST} --port=${POSTGRES_PORT}"
+
+# Database checks
+pg_isready ${PG_ARGS} 2>&1 >/dev/null
+if [ $? -ne 0 ]; then
+  echo "Unable to connect to postgres at ${POSTGRES_HOST}:${POSTGRES_PORT}."
+  exit 1
+fi
+
+psql ${PG_ARGS} -U ${ICINGA_DB_USER} -lqt | cut -d \| -f 1 | grep -qw ${ICINGA_DB} 2>&1 >/dev/null
+if [ $? -ne 0 ]; then
+  echo "Icinga database ${ICINGA_DB} does not exist."
+  exit 1
+fi
+
+psql ${PG_ARGS} -U ${ICINGA_DB_USER} -d ${ICINGA_DB} -qt --command='\dt' | cut -d \| -f 2 | grep -qw icinga_hosts 2>&1 >/dev/null
+if [ $? -ne 0 ]; then
+  echo "Initializing schema in ${ICINGA_DB}..."
+  psql ${PG_ARGS} -U ${ICINGA_DB_USER} -d ${ICINGA_DB} < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql >/dev/null
+fi
+
+psql ${PG_ARGS} -U ${ICINGAWEB_DB_USER} -lqt | cut -d \| -f 1 | grep -qw ${ICINGAWEB_DB}
+if [ $? -ne 0 ]; then
+  echo "Icinga web database ${ICINGAWEB_DB} does not exist."
+  exit 1
+fi
+
+psql ${PG_ARGS} -U ${ICINGAWEB_DB_USER} -d ${ICINGAWEB_DB} -qt --command='\dt' | cut -d \| -f 2 | grep -qw icingaweb_user 2>&1 >/dev/null
+if [ $? -ne 0 ]; then
+  echo "Initializing schema in ${ICINGAWEB_DB}..."
+  psql ${PG_ARGS} -U ${ICINGAWEB_DB_USER} -d ${ICINGAWEB_DB} < /usr/share/webapps/icingaweb2/etc/schema/pgsql.schema.sql >/dev/null
+  psql ${PG_ARGS} -U ${ICINGAWEB_DB_USER} -d ${ICINGAWEB_DB} -c "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('admin', 1, '\$apr1\$XGXddV//\$9RQ1aPossDMFAuBvRcqqT/');"
+fi
+
+# Icinga2 setup
+if [ ! -d "/config/icinga2" ]; then
+  cp -a /defaults/icinga2 /config
+fi
+
+if [ ! -d "/etc/icing2" ]; then
+  ln -s /config/icinga2 /etc/icinga2
+fi
+
+if [ ! -f "/etc/icinga2/features-enabled/api.conf" ]; then
+  echo "Enabling icinga2 API..."
+  /usr/sbin/icinga2 api setup
+fi
+
+API_PASSWORD=`cat /etc/icinga2/conf.d/api-users.conf | grep -A 1 '"root"' | grep password | cut -d \" -f 2`
+
+if [ ! -f "/etc/icinga2/features-enabled/ido-pgsql.conf" ]; then
+  echo "Enabling icinga2 IDO..."
+  /usr/sbin/icinga2 feature enable ido-pgsql
+
+  sed -i -re "s^//user =.+^user = \"${ICINGA_DB_USER}\"^" /etc/icinga2/features-available/ido-pgsql.conf
+  sed -i -re "s^//password =.+^password = \"${ICINGA_DB_PASS}\"^" /etc/icinga2/features-available/ido-pgsql.conf
+  sed -i -re "s^//host =.+^host = \"${POSTGRES_HOST}\"^" /etc/icinga2/features-available/ido-pgsql.conf
+  sed -i -re "s^//database =.+^database = \"${ICINGA_DB}\"^" /etc/icinga2/features-available/ido-pgsql.conf
+fi
+
+# Icinga Web2 setup
+if [ ! -d "/config/icingaweb2" ]; then
+  cp -a /defaults/icingaweb2 /config
+  mkdir /config/icingaweb2/enabledModules
+  ln -s /usr/share/webapps/icingaweb2/modules/monitoring /config/icingaweb2/enabledModules
+
+  cat >/config/icingaweb2/modules/monitoring/commandtransports.ini <<EOF
+[icinga2]
+transport = "api"
+host = "localhost"
+port = "5665"
+username = "root"
+password = "${API_PASSWORD}"
+EOF
+
+  cat >/config/icingaweb2/resources.ini <<EOF
+[icingaweb_db]
+type = "db"
+db = "pgsql"
+host = "${POSTGRES_HOST}"
+port = "${POSTGRES_PORT}"
+dbname = "${ICINGAWEB_DB}"
+username = "${ICINGAWEB_DB_USER}"
+password = "${ICINGAWEB_DB_PASS}"
+use_ssl = "0"
+
+[icinga_ido]
+type = "db"
+db = "pgsql"
+host = "${POSTGRES_HOST}"
+port = "${POSTGRES_PORT}"
+dbname = "${ICINGA_DB}"
+username = "${ICINGA_DB_USER}"
+password = "${ICINGA_DB_PASS}"
+use_ssl = "0"
+EOF
+
+  chown -R root:icingaweb2 /config/icingaweb2
+  chmod -R g+rw /config/icingaweb2
+fi
+
+if [ ! -d "/etc/icingweb2" ]; then
+  ln -s /config/icingaweb2 /etc/icingaweb2
+fi
