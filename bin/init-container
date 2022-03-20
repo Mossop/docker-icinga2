@@ -13,3 +13,8 @@ fi
 /bin/init-director || exit 1
 
 rm -f ~/.pgpass
+
+cat /etc/hosts | grep -qw ${NODE_NAME} 2>&1 >/dev/null
+if [ $? -ne 0 ]; then
+  echo "127.0.0.1       ${NODE_NAME}" >>/etc/hosts
+fi
