@@ -10,7 +10,15 @@ RUN \
   tar -C / -Jxpf /tmp/s6-overlay-noarch-${S6_OVERLAY_VERSION}.tar.xz && \
   tar -C / -Jxpf /tmp/s6-overlay-x86_64-${S6_OVERLAY_VERSION}.tar.xz && \
   rm /tmp/*.tar.xz && \
-  apk add bash nginx php8-fpm icinga2 icingaweb2 patch shadow postgresql14-client && \
+  apk add \
+    bash \
+    nginx \
+    php8-fpm \
+    icinga2 \
+    icingaweb2 \
+    icingaweb2-module-director \
+    shadow \
+    postgresql14-client && \
   mkdir /config /data && \
   mv /etc/icinga2 /defaults && \
   rm -rf /etc/icingaweb2 && \
@@ -25,11 +33,17 @@ ENV ICINGA_DB="icinga"
 ENV ICINGA_DB_USER="icinga"
 ENV ICINGA_DB_PASS="icinga"
 
-ENV ICINGAWEB_DB="icingaweb"
+ENV ICINGAWEB_DB="icinga-web"
 ENV ICINGAWEB_DB_USER="icinga"
 ENV ICINGAWEB_DB_PASS="icinga"
 
+ENV DIRECTOR_DB="icinga-director"
+ENV DIRECTOR_DB_USER="icinga"
+ENV DIRECTOR_DB_PASS="icinga"
+
 ENV ADMIN_USER="admin"
 ENV ADMIN_PASS="admin"
+
+ENV NODE_NAME="icinga-master"
 
 ENTRYPOINT ["/init"]
