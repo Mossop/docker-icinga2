@@ -13,6 +13,7 @@ RUN \
     php8-fpm \
     icinga2 \
     icingaweb2 \
+    monitoring-plugins \
     shadow \
     postgresql14-client && \
   mkdir -p /icinga/config /icinga/data /defaults/config /defaults/data && \

@@ -9,6 +9,7 @@ RUN \
   rm /tmp/*.tar.xz && \
   apk add \
     bash \
+    monitoring-plugins \
     icinga2 && \
   mkdir -p /icinga/config /icinga/data /defaults/config /defaults/data && \
   mv /etc/icinga2 /defaults/config && \
