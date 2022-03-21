@@ -19,7 +19,7 @@ RUN \
   mkdir -p /icinga/config /icinga/data /defaults/config /defaults/data && \
   mv /etc/icinga2 /defaults/config && \
   mv /var/lib/icinga2 /defaults/data && \
-  rm -rf /etc/icingaweb2 /var/lib/icingaweb2 /defaults/config/icinga2/certs && \
+  rm -rf /etc/icingaweb2 /var/lib/icingaweb2 /defaults/data/icinga2/certs && \
   usermod -a -G icingaweb2 nobody
 
 COPY rootfs /

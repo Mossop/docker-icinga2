@@ -14,7 +14,7 @@ RUN \
   mkdir -p /icinga/config /icinga/data /defaults/config /defaults/data && \
   mv /etc/icinga2 /defaults/config && \
   mv /var/lib/icinga2 /defaults/data && \
-  rm -rf /defaults/config/icinga2/certs
+  rm -rf /defaults/data/icinga2/certs
 
 COPY rootfs /
 
