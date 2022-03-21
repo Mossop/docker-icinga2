@@ -1,0 +1,48 @@
+#! /bin/bash
+
+BASE="/icinga"
+DEFAULTS="/defaults"
+
+ensure()
+{
+  NAME=$2
+  TYPE=$1
+
+  if [ -d "$DEFAULTS/$TYPE/$NAME" ]; then
+    if [ "$TYPE" == "config" ]; then
+      TARGET="/etc"
+    else
+      TARGET="/var/lib"
+    fi
+
+    mkdir -p "$BASE/$TYPE"
+
+    if [ ! -d "$BASE/$TYPE/$NAME" ]; then
+      cp -a "$DEFAULTS/$TYPE/$NAME" "$BASE/$TYPE"
+    fi
+
+    if [ ! -d "$TARGET/$NAME" ]; then
+      ln -s "$BASE/$TYPE/$NAME" "$TARGET/$NAME"
+    fi
+  fi
+}
+
+ensure config icinga2
+ensure data icinga2
+ensure config icingaweb2
+ensure data icingaweb2
+
+if [ ! -d "$BASE/data/icinga2/certs" ]; then
+  echo "Icinga not yet configured. Connect to the container and execute 'icinga2 node wizard'"
+  exit 1
+fi
+
+if [ -f "/bin/init-icinga" ]; then
+  /bin/init-icinga || exit 1
+fi
+
+
+if [ -f "/bin/init-icingaweb" ]; then
+  /bin/init-icingaweb || exit 1
+fi
+

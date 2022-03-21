@@ -1,0 +1,79 @@
+#! /bin/sh
+
+rm -f ~/.pgpass
+echo "*:*:*:${ICINGAWEB_DB_USER}:${ICINGAWEB_DB_PASS}" >~/.pgpass
+chmod 0600 ~/.pgpass
+
+PG_ARGS="--host=${POSTGRES_HOST} --port=${POSTGRES_PORT}"
+
+pg_isready ${PG_ARGS} 2>&1 >/dev/null
+if [ $? -ne 0 ]; then
+  echo "Unable to connect to postgres at ${POSTGRES_HOST}:${POSTGRES_PORT}."
+  exit 1
+fi
+
+PG_WEB_ARGS="${PG_ARGS} -U ${ICINGAWEB_DB_USER} -d ${ICINGAWEB_DB}"
+
+psql ${PG_ARGS} -U ${ICINGAWEB_DB_USER} -lqt | cut -d \| -f 1 | grep -qw ${ICINGAWEB_DB}
+if [ $? -ne 0 ]; then
+  echo "Icinga web database ${ICINGAWEB_DB} does not exist."
+  exit 1
+fi
+
+psql ${PG_WEB_ARGS} -qt --command='\dt' | cut -d \| -f 2 | grep -qw icingaweb_user 2>&1 >/dev/null
+if [ $? -ne 0 ]; then
+  echo "Initializing schema in ${ICINGAWEB_DB}..."
+  psql ${PG_WEB_ARGS} < /usr/share/webapps/icingaweb2/etc/schema/pgsql.schema.sql >/dev/null
+
+  PASS_HASH=`/usr/bin/php8 -r "echo password_hash(\"${ADMIN_PASS}\", PASSWORD_DEFAULT);"`
+  psql ${PG_WEB_ARGS} -c "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('${ADMIN_USER}', 1, '${PASS_HASH}');"
+  psql ${PG_WEB_ARGS} -c "INSERT INTO icingaweb_group (name) VALUES ('Administrators');"
+  psql ${PG_WEB_ARGS} -c "INSERT INTO icingaweb_group_membership (group_id, username, ctime) SELECT id, 'admin', ctime FROM icingaweb_group WHERE name='Administrators';"
+fi
+
+if [ ! -d "/etc/icingaweb2/enabledModules/monitoring" ]; then
+  mkdir -p /config/icingaweb2/enabledModules
+  ln -s /usr/share/webapps/icingaweb2/modules/monitoring /etc/icingaweb2/enabledModules
+fi
+
+if [ ! -f "/etc/icingaweb2/modules/monitoring/commandtransports.ini" ]; then
+  API_PASSWORD=`cat /etc/icinga2/conf.d/api-users.conf | grep -A 1 '"root"' | grep password | cut -d \" -f 2`
+
+  cat >/etc/icingaweb2/modules/monitoring/commandtransports.ini <<EOF
+[icinga2]
+transport = "api"
+host = "localhost"
+port = "5665"
+username = "root"
+password = "${API_PASSWORD}"
+EOF
+fi
+
+if [ ! -f "/etc/icingaweb2/resources.ini" ]; then
+  cat >/etc/icingaweb2/resources.ini <<EOF
+[icingaweb_db]
+type = "db"
+db = "pgsql"
+host = "${POSTGRES_HOST}"
+port = "${POSTGRES_PORT}"
+dbname = "${ICINGAWEB_DB}"
+username = "${ICINGAWEB_DB_USER}"
+password = "${ICINGAWEB_DB_PASS}"
+use_ssl = "0"
+charset = "utf8"
+
+[icinga_ido]
+type = "db"
+db = "pgsql"
+host = "${POSTGRES_HOST}"
+port = "${POSTGRES_PORT}"
+dbname = "${ICINGA_DB}"
+username = "${ICINGA_DB_USER}"
+password = "${ICINGA_DB_PASS}"
+use_ssl = "0"
+charset = "utf8"
+EOF
+fi
+
+chown -R root:icingaweb2 /icinga/config/icingaweb2
+chmod -R g+rw /icinga/config/icingaweb2

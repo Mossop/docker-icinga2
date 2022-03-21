@@ -1,0 +1,38 @@
+#! /bin/sh
+
+if [ ! -f "/etc/icinga2/features-enabled/ido-pgsql.conf" ]; then
+  echo "Enabling icinga2 IDO..."
+
+  rm -f ~/.pgpass
+  echo "*:*:*:${ICINGA_DB_USER}:${ICINGA_DB_PASS}" >~/.pgpass
+  chmod 0600 ~/.pgpass
+
+  PG_ARGS="--host=${POSTGRES_HOST} --port=${POSTGRES_PORT}"
+
+  pg_isready ${PG_ARGS} 2>&1 >/dev/null
+  if [ $? -ne 0 ]; then
+    echo "Unable to connect to postgres at ${POSTGRES_HOST}:${POSTGRES_PORT}."
+    exit 1
+  fi
+
+  PG_IC2_ARGS="${PG_ARGS} -U ${ICINGA_DB_USER} -d ${ICINGA_DB}"
+
+  psql ${PG_ARGS} -U ${ICINGA_DB_USER} -lqt | cut -d \| -f 1 | grep -qw ${ICINGA_DB} 2>&1 >/dev/null
+  if [ $? -ne 0 ]; then
+    echo "Icinga database ${ICINGA_DB} does not exist."
+    exit 1
+  fi
+
+  psql ${PG_IC2_ARGS} -qt --command='\dt' | cut -d \| -f 2 | grep -qw icinga_hosts 2>&1 >/dev/null
+  if [ $? -ne 0 ]; then
+    echo "Initializing schema in ${ICINGA_DB}..."
+    psql ${PG_IC2_ARGS} < /usr/share/icinga2-ido-pgsql/schema/pgsql.sql >/dev/null
+  fi
+
+  /usr/sbin/icinga2 feature enable ido-pgsql
+
+  sed -i -re "s^//user =.+^user = \"${ICINGA_DB_USER}\"^" /etc/icinga2/features-available/ido-pgsql.conf
+  sed -i -re "s^//password =.+^password = \"${ICINGA_DB_PASS}\"^" /etc/icinga2/features-available/ido-pgsql.conf
+  sed -i -re "s^//host =.+^host = \"${POSTGRES_HOST}\"^" /etc/icinga2/features-available/ido-pgsql.conf
+  sed -i -re "s^//database =.+^database = \"${ICINGA_DB}\"^" /etc/icinga2/features-available/ido-pgsql.conf
+fi
