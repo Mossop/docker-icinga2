@@ -36,3 +36,8 @@ if [ ! -f "/etc/icinga2/features-enabled/ido-pgsql.conf" ]; then
   sed -i -re "s^//host =.+^host = \"${POSTGRES_HOST}\"^" /etc/icinga2/features-available/ido-pgsql.conf
   sed -i -re "s^//database =.+^database = \"${ICINGA_DB}\"^" /etc/icinga2/features-available/ido-pgsql.conf
 fi
+
+if [ ! -f "/etc/icinga2/features-enabled/checker.conf" ]; then
+  echo "Enabling icinga2 checker..."
+  /usr/sbin/icinga2 feature enable checker
+fi

@@ -1,0 +1,6 @@
+#! /bin/sh
+
+if [ ! -f "/etc/icinga2/features-enabled/checker.conf" ]; then
+  echo "Enabling icinga2 checker..."
+  /usr/sbin/icinga2 feature enable checker
+fi

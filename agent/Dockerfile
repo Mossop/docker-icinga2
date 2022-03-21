@@ -17,6 +17,7 @@ RUN \
   rm -rf /defaults/data/icinga2/certs
 
 COPY rootfs /
+COPY agent/rootfs /
 
 EXPOSE 5665/tcp
 
