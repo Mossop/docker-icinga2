@@ -18,4 +18,6 @@ RUN \
 
 COPY rootfs /
 
+EXPOSE 5665/tcp
+
 ENTRYPOINT ["/init"]

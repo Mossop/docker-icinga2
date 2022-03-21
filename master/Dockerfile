@@ -39,4 +39,7 @@ ENV ICINGAWEB_DB_PASS="icinga"
 ENV ADMIN_USER="admin"
 ENV ADMIN_PASS="admin"
 
+EXPOSE 80/tcp
+EXPOSE 5665/tcp
+
 ENTRYPOINT ["/init"]
