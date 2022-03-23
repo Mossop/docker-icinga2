@@ -32,6 +32,12 @@ ensure data icinga2
 ensure config icingaweb2
 ensure data icingaweb2
 
+/sbin/apk update
+/sbin/apk upgrade
+if [ -f "/icinga/config/packages" ]; then
+  cat "/icinga/config/packages" | xargs /sbin/apk add
+fi
+
 if [ ! -d "$BASE/data/icinga2/certs" ]; then
   echo "Icinga not yet configured. Connect to the container and execute 'icinga2 node wizard'"
   exit 1
@@ -45,4 +51,3 @@ fi
 if [ -f "/bin/init-icingaweb" ]; then
   /bin/init-icingaweb || exit 1
 fi
-
