@@ -43,7 +43,7 @@ if [ ! -d "$BASE/data/icinga2/certs" ]; then
   exit 1
 fi
 
-chmod ug+s /usr/lib/monitoring-plugins/check_ide_smart
+chmod ugo+s /usr/lib/monitoring-plugins/check_ide_smart
 
 if [ -f "/bin/init-icinga" ]; then
   /bin/init-icinga || exit 1
