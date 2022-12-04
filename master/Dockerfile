@@ -10,12 +10,12 @@ RUN \
   apk add \
     bash \
     nginx \
-    php8-fpm \
+    php81-fpm \
     icinga2 \
     icingaweb2 \
     monitoring-plugins \
     shadow \
-    postgresql14-client && \
+    postgresql15-client && \
   mkdir -p /icinga/config /icinga/data /defaults/config /defaults/data && \
   mv /etc/icinga2 /defaults/config && \
   mv /var/lib/icinga2 /defaults/data && \
