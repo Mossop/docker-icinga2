@@ -11,6 +11,9 @@ RUN \
     bash \
     nginx \
     php81-fpm \
+    php81-pdo \
+    php81-pdo_pgsql \
+    php81-pgsql \
     icinga2 \
     icingaweb2 \
     monitoring-plugins \
