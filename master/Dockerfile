@@ -1,5 +1,5 @@
-FROM alpine
-ARG S6_OVERLAY_VERSION=3.1.5.0
+FROM alpine:3.20
+ARG S6_OVERLAY_VERSION=3.2.0.0
 ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz /tmp
 ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_OVERLAY_VERSION}/s6-overlay-x86_64.tar.xz /tmp
 
@@ -10,10 +10,10 @@ RUN \
   apk add \
     bash \
     nginx \
-    php81-fpm \
-    php81-pdo \
-    php81-pdo_pgsql \
-    php81-pgsql \
+    php83-fpm \
+    php83-pdo \
+    php83-pdo_pgsql \
+    php83-pgsql \
     icinga2 \
     icingaweb2 \
     monitoring-plugins \
