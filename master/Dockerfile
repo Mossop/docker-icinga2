@@ -10,10 +10,11 @@ RUN \
   apk add \
     bash \
     nginx \
-    php83-fpm \
-    php83-pdo \
-    php83-pdo_pgsql \
-    php83-pgsql \
+    php82 \
+    php82-fpm \
+    php82-pdo \
+    php82-pdo_pgsql \
+    php82-pgsql \
     icinga2 \
     icingaweb2 \
     monitoring-plugins \

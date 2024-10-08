@@ -1,2 +1,2 @@
 #!/command/execlineb -P
-/usr/sbin/php-fpm81 --nodaemonize --force-stderr
+/usr/sbin/php-fpm8* --nodaemonize --force-stderr

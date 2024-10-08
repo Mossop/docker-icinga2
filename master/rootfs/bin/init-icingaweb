@@ -25,7 +25,7 @@ if [ $? -ne 0 ]; then
   echo "Initializing schema in ${ICINGAWEB_DB}..."
   psql ${PG_WEB_ARGS} < /usr/share/webapps/icingaweb2/etc/schema/pgsql.schema.sql >/dev/null
 
-  PASS_HASH=`/usr/bin/php8 -r "echo password_hash(\"${ADMIN_PASS}\", PASSWORD_DEFAULT);"`
+  PASS_HASH=`/usr/bin/php -r "echo password_hash(\"${ADMIN_PASS}\", PASSWORD_DEFAULT);"`
   psql ${PG_WEB_ARGS} -c "INSERT INTO icingaweb_user (name, active, password_hash) VALUES ('${ADMIN_USER}', 1, '${PASS_HASH}');"
   psql ${PG_WEB_ARGS} -c "INSERT INTO icingaweb_group (name) VALUES ('Administrators');"
   psql ${PG_WEB_ARGS} -c "INSERT INTO icingaweb_group_membership (group_id, username, ctime) SELECT id, 'admin', ctime FROM icingaweb_group WHERE name='Administrators';"
